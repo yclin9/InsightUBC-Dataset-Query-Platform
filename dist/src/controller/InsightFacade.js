@@ -1,46 +1,13 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const jszip_1 = __importDefault(require("jszip"));
 const IInsightFacade_1 = require("./IInsightFacade");
+const RoomsProcessor_1 = require("./RoomsProcessor");
+const SectionsProcessor_1 = require("./SectionsProcessor");
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const decimal_js_1 = __importDefault(require("decimal.js"));
-const parse5 = __importStar(require("parse5"));
 class InsightFacade {
     datasets = new Map();
     datasetLoaded = false;
@@ -85,291 +52,29 @@ class InsightFacade {
         if (id.includes("_")) {
             throw new IInsightFacade_1.InsightError("Invalid id: id cannot include underscore");
         }
-        if (kind !== IInsightFacade_1.InsightDatasetKind.Sections && kind !== IInsightFacade_1.InsightDatasetKind.Rooms) {
-            throw new IInsightFacade_1.InsightError("Invalid kind");
-        }
+        const processor = this.getProcessor(kind);
         if (this.datasets.has(id)) {
             throw new IInsightFacade_1.InsightError("Dataset already exist");
         }
-        if (kind === IInsightFacade_1.InsightDatasetKind.Rooms) {
-            return this.addRoomsDataset(id, content, kind);
-        }
-        let zip;
-        try {
-            zip = await jszip_1.default.loadAsync(content, { base64: true });
-        }
-        catch (err) {
-            throw new IInsightFacade_1.InsightError("Invalid zip content");
-        }
-        const courseFolder = zip.folder("courses");
-        if (courseFolder === null) {
-            throw new IInsightFacade_1.InsightError("No courses/ folder");
-        }
-        const sectionPromises = [];
-        courseFolder.forEach((relativePath, file) => {
-            if (!file.dir) {
-                const promise = file.async("string").then((fileContent) => {
-                    try {
-                        const json = JSON.parse(fileContent);
-                        if (!Array.isArray(json.result)) {
-                            return [];
-                        }
-                        return json.result.filter((section) => this.isValidSection(section));
-                    }
-                    catch {
-                        return [];
-                    }
-                });
-                sectionPromises.push(promise);
-            }
-        });
-        const nestedSections = await Promise.all(sectionPromises);
-        const validSections = nestedSections.flat();
-        if (validSections.length === 0) {
-            throw new IInsightFacade_1.InsightError("No valid sections found");
-        }
-        const processedSections = validSections.map((section) => ({
-            ...section,
-            Year: section.Section === "overall" ? 1900 : parseInt(section.Year, 10),
-            id: String(section.id),
-        }));
-        await fs_extra_1.default.outputJSON(`data/${id}.json`, processedSections);
+        const rows = await processor.process(content);
+        await fs_extra_1.default.outputJSON(`data/${id}.json`, { kind, rows });
         this.datasets.set(id, {
             id: id,
             kind: kind,
-            numRows: validSections.length,
+            numRows: rows.length,
         });
         return Array.from(this.datasets.keys());
     }
-    async addRoomsDataset(id, content, kind) {
-        let zip;
-        try {
-            zip = await jszip_1.default.loadAsync(content, { base64: true });
+    getProcessor(kind) {
+        const processors = {
+            [IInsightFacade_1.InsightDatasetKind.Sections]: new SectionsProcessor_1.SectionsProcessor(),
+            [IInsightFacade_1.InsightDatasetKind.Rooms]: new RoomsProcessor_1.RoomsProcessor(),
+        };
+        const processor = processors[kind];
+        if (processor === undefined) {
+            throw new IInsightFacade_1.InsightError("Invalid kind");
         }
-        catch {
-            throw new IInsightFacade_1.InsightError("Invalid zip content");
-        }
-        const indexFile = zip.file("index.htm");
-        if (indexFile === null) {
-            throw new IInsightFacade_1.InsightError("Missing index.htm");
-        }
-        const indexContent = await indexFile.async("string");
-        const indexDocument = parse5.parse(indexContent);
-        const buildings = this.extractBuildingsFromIndex(indexDocument);
-        if (buildings.length === 0) {
-            throw new IInsightFacade_1.InsightError("No valid buildings found");
-        }
-        const rooms = [];
-        for (const building of buildings) {
-            const buildingPath = this.normalizeBuildingPath(building.href);
-            const buildingFile = zip.file(buildingPath);
-            if (buildingFile === null) {
-                continue;
-            }
-            const buildingContent = await buildingFile.async("string");
-            const buildingDocument = parse5.parse(buildingContent);
-            const roomCandidates = this.extractRoomsFromBuilding(buildingDocument, building);
-            if (roomCandidates.length === 0) {
-                continue;
-            }
-            const geo = await this.getGeolocation(building.address);
-            if (geo === null) {
-                continue;
-            }
-            for (const room of roomCandidates) {
-                rooms.push({
-                    ...room,
-                    lat: geo.lat,
-                    lon: geo.lon,
-                });
-            }
-        }
-        if (rooms.length === 0) {
-            throw new IInsightFacade_1.InsightError("No valid rooms found");
-        }
-        await fs_extra_1.default.outputJSON(`data/${id}.json`, {
-            kind: kind,
-            buildings: buildings,
-            rows: rooms,
-        });
-        this.datasets.set(id, {
-            id: id,
-            kind: kind,
-            numRows: rooms.length,
-        });
-        return Array.from(this.datasets.keys());
-    }
-    extractBuildingsFromIndex(document) {
-        const rows = this.findAllNodes(document, "tr");
-        const buildings = [];
-        for (const row of rows) {
-            const titleCell = this.findFirstNodeWithClass(row, "td", "views-field-title");
-            const addressCell = this.findFirstNodeWithClass(row, "td", "views-field-field-building-address");
-            const codeCell = this.findFirstNodeWithClass(row, "td", "views-field-field-building-code");
-            if (titleCell === null || addressCell === null) {
-                continue;
-            }
-            const link = this.findFirstNode(titleCell, "a");
-            if (link === null) {
-                continue;
-            }
-            const href = this.getAttribute(link, "href");
-            const address = this.getText(addressCell).trim();
-            const fullname = this.getText(titleCell).trim();
-            let shortname = "";
-            if (codeCell !== null) {
-                shortname = this.getText(codeCell).trim();
-            }
-            else {
-                shortname = this.getText(link).trim();
-            }
-            if (href === "" || address === "" || fullname === "" || shortname === "") {
-                continue;
-            }
-            buildings.push({
-                shortname,
-                fullname,
-                address,
-                href,
-            });
-        }
-        return buildings;
-    }
-    extractRoomsFromBuilding(document, building) {
-        const rows = this.findAllNodes(document, "tr");
-        const rooms = [];
-        for (const row of rows) {
-            const numberCell = this.findFirstNodeWithClass(row, "td", "views-field-field-room-number");
-            const seatsCell = this.findFirstNodeWithClass(row, "td", "views-field-field-room-capacity");
-            const furnitureCell = this.findFirstNodeWithClass(row, "td", "views-field-field-room-furniture");
-            const typeCell = this.findFirstNodeWithClass(row, "td", "views-field-field-room-type");
-            if (numberCell === null || seatsCell === null || furnitureCell === null || typeCell === null) {
-                continue;
-            }
-            const number = this.getText(numberCell).trim();
-            const seatsText = this.getText(seatsCell).trim();
-            const furniture = this.getText(furnitureCell).trim();
-            const type = this.getText(typeCell).trim();
-            const seats = Number(seatsText);
-            if (Number.isNaN(seats)) {
-                continue;
-            }
-            const link = this.findFirstNode(numberCell, "a");
-            const href = link === null ? "" : this.getAttribute(link, "href");
-            rooms.push({
-                fullname: building.fullname,
-                shortname: building.shortname,
-                number: number,
-                name: `${building.shortname}_${number}`,
-                address: building.address,
-                lat: 0,
-                lon: 0,
-                seats: seats,
-                type: type,
-                furniture: furniture,
-                href: href,
-            });
-        }
-        return rooms;
-    }
-    normalizeBuildingPath(href) {
-        return href.replace(/^\.\//, "").replace(/^\/+/, "");
-    }
-    async getGeolocation(address) {
-        const encodedAddress = encodeURIComponent(address);
-        const url = `http://cs310.students.cs.ubc.ca:11316/api/v1/project_team078/${encodedAddress}`;
-        try {
-            const response = await fetch(url);
-            if (!response.ok) {
-                return null;
-            }
-            const geo = (await response.json());
-            if (typeof geo.lat !== "number" || typeof geo.lon !== "number") {
-                return null;
-            }
-            return {
-                lat: geo.lat,
-                lon: geo.lon,
-            };
-        }
-        catch {
-            return null;
-        }
-    }
-    findAllNodes(node, tagName) {
-        const result = [];
-        if (node.tagName === tagName) {
-            result.push(node);
-        }
-        if (node.childNodes !== undefined) {
-            for (const child of node.childNodes) {
-                result.push(...this.findAllNodes(child, tagName));
-            }
-        }
-        return result;
-    }
-    findFirstNode(node, tagName) {
-        if (node.tagName === tagName) {
-            return node;
-        }
-        if (node.childNodes !== undefined) {
-            for (const child of node.childNodes) {
-                const found = this.findFirstNode(child, tagName);
-                if (found !== null) {
-                    return found;
-                }
-            }
-        }
-        return null;
-    }
-    findFirstNodeWithClass(node, tagName, className) {
-        if (node.tagName === tagName && this.hasClass(node, className)) {
-            return node;
-        }
-        if (node.childNodes !== undefined) {
-            for (const child of node.childNodes) {
-                const found = this.findFirstNodeWithClass(child, tagName, className);
-                if (found !== null) {
-                    return found;
-                }
-            }
-        }
-        return null;
-    }
-    hasClass(node, className) {
-        const classAttr = this.getAttribute(node, "class");
-        return classAttr.split(/\s+/).includes(className);
-    }
-    getAttribute(node, attrName) {
-        if (node.attrs === undefined) {
-            return "";
-        }
-        const attr = node.attrs.find((a) => a.name === attrName);
-        return attr === undefined ? "" : attr.value;
-    }
-    getText(node) {
-        let text = "";
-        if (node.nodeName === "#text" && typeof node.value === "string") {
-            text += node.value;
-        }
-        if (node.childNodes !== undefined) {
-            for (const child of node.childNodes) {
-                text += this.getText(child);
-            }
-        }
-        return text;
-    }
-    isValidSection(section) {
-        return (section.id !== undefined &&
-            section.Course !== undefined &&
-            section.Title !== undefined &&
-            section.Professor !== undefined &&
-            section.Subject !== undefined &&
-            section.Year !== undefined &&
-            section.Avg !== undefined &&
-            section.Pass !== undefined &&
-            section.Fail !== undefined &&
-            section.Audit !== undefined);
+        return processor;
     }
     async removeDataset(id) {
         if (id.trim() === "") {
@@ -449,7 +154,8 @@ class InsightFacade {
                 }
             }
             for (const col of columns) {
-                if (!groupKeys.includes(col) && !applyKeys.includes(col)) {
+                if (!groupKeys.includes(col) &&
+                    !applyKeys.includes(col)) {
                     throw new IInsightFacade_1.InsightError("COLUMNS must be in GROUP or APPLY");
                 }
             }
@@ -550,10 +256,21 @@ class InsightFacade {
     }
     applyTransformations(sections, groupKeys, applyRules, columns) {
         const fieldMap = this.getFieldMap();
-        const mfields = ["avg", "pass", "fail", "audit", "year", "lat", "lon", "seats"];
+        const mfields = [
+            "avg",
+            "pass",
+            "fail",
+            "audit",
+            "year",
+            "lat",
+            "lon",
+            "seats",
+        ];
         const groups = new Map();
         for (const section of sections) {
-            const key = groupKeys.map((k) => section[fieldMap[k.split("_")[1]]]).join("_");
+            const key = groupKeys
+                .map((k) => section[fieldMap[k.split("_")[1]]])
+                .join("_");
             if (!groups.has(key)) {
                 groups.set(key, []);
             }
@@ -675,7 +392,16 @@ class InsightFacade {
         }
         const value = filterValue[field];
         const sectionField = fieldMap[field.split("_")[1]];
-        const mfields = ["avg", "pass", "fail", "audit", "year", "lat", "lon", "seats"];
+        const mfields = [
+            "avg",
+            "pass",
+            "fail",
+            "audit",
+            "year",
+            "lat",
+            "lon",
+            "seats",
+        ];
         const sfields = [
             "dept",
             "id",

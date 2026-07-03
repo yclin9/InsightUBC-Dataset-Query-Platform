@@ -45,7 +45,9 @@ class Server {
         try {
             const { id, kind } = req.params;
             const content = req.body.content;
-            const datasetKind = kind === "rooms" ? IInsightFacade_1.InsightDatasetKind.Rooms : IInsightFacade_1.InsightDatasetKind.Sections;
+            const datasetKind = kind === "rooms"
+                ? IInsightFacade_1.InsightDatasetKind.Rooms
+                : IInsightFacade_1.InsightDatasetKind.Sections;
             const result = await this.facade.addDataset(id, content, datasetKind);
             res.status(200).json({ result });
         }
