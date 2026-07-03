@@ -1,0 +1,40 @@
+{
+	"title": "SELECT dept, course, no filter",
+	"input": {
+		"WHERE": {},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_id"
+			],
+			"ORDER": "small_id"
+		}
+	},
+	"errorExpected": false,
+	"expected": [
+        {
+            "small_dept": "math",
+			"small_id": "100"
+        },
+        {
+            "small_dept": "cpsc",
+			"small_id": "110"
+        },
+		{
+            "small_dept": "cpen",
+			"small_id": "211"
+        },
+		{
+            "small_dept": "cpsc",
+			"small_id": "221"
+        },
+		{
+            "small_dept": "stat",
+			"small_id": "251"
+        },
+		{
+            "small_dept": "cpsc",
+			"small_id": "310"
+        }
+	]
+}

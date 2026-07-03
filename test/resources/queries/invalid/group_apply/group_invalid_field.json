@@ -1,0 +1,13 @@
+{
+    "title": "GROUP key references invalid field",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {"COLUMNS": ["small_invalid"]},
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_invalid"],
+            "APPLY": []
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

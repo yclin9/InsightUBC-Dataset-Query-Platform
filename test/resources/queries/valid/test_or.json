@@ -1,0 +1,37 @@
+{
+	"title": "SELECT dept, course, avg WHERE avg > 80 OR avg < 72",
+	"input": {
+		"WHERE": {
+			"OR": [
+				{ "GT": { "small_avg": 80 } },
+				{ "LT": { "small_avg": 72 } }
+			]
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_id",
+				"small_avg"
+			],
+			"ORDER": "small_avg"
+		}
+	},
+	"errorExpected": false,
+	"expected": [
+		{
+			"small_dept": "math",
+			"small_id": "100",
+			"small_avg": 70.53
+		},
+		{
+			"small_dept": "cpsc",
+			"small_id": "110",
+			"small_avg": 71.07
+		},
+		{
+			"small_dept": "cpsc",
+			"small_id": "221",
+			"small_avg": 82.45
+		}
+	]
+}

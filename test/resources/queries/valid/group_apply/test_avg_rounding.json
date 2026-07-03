@@ -1,0 +1,36 @@
+{
+    "title": "GROUP by dept and AVG avg result (rounded to two decimal places)",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "avgGrade"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_dept"],
+            "APPLY": [{
+                "avgGrade": {
+                    "AVG": "small_avg"
+                }
+            }]
+        }
+    },
+    "errorExpected": false,
+    "expected": [
+        {
+            "small_dept": "cpen",
+            "avgGrade": 73.81
+        },
+        {
+            "small_dept": "cpsc",
+            "avgGrade": 77.40
+        },
+        {
+            "small_dept": "math",
+            "avgGrade": 70.53
+        },
+        {
+            "small_dept": "stat",
+            "avgGrade": 72.42
+        }
+    ]
+}

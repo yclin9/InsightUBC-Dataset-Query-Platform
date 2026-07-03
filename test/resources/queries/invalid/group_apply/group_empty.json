@@ -1,0 +1,15 @@
+{
+    "title": "GROUP is empty array",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["avgGrade"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": [],
+            "APPLY": [{"avgGrade": {"AVG": "small_avg"}}]
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

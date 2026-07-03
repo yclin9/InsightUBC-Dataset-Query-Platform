@@ -1,0 +1,18 @@
+{
+	"title": "IS used on number field",
+	"input": {
+		"WHERE": {
+			"IS": {
+				"small_avg": 78.69
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_avg"
+			]
+		}
+	},
+	"errorExpected": true,
+	"expected": "InsightError"
+}

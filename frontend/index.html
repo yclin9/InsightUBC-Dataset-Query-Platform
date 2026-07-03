@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InsightUBC</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        h1 { color: #002145; }
+        form { display: flex; flex-direction: column; gap: 10px; max-width: 400px; }
+        input, select { padding: 8px; font-size: 14px; }
+        button { padding: 10px; background: #002145; color: white; border: none; cursor: pointer; font-size: 14px; }
+        button:hover { background: #0055b3; }
+        #error { color: red; }
+        #success { color: green; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #002145; color: white; }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <h1>InsightUBC</h1>
+
+    <h2>Upload Dataset</h2>
+    <form id="uploadForm">
+        <label>Dataset ID:</label>
+        <input type="text" id="datasetId" placeholder="e.g. sections" required>
+
+        <label>Dataset Type:</label>
+        <select id="datasetKind">
+            <option value="sections">Sections</option>
+            <option value="rooms">Rooms</option>
+        </select>
+
+        <label>ZIP File:</label>
+        <input type="file" id="datasetFile" accept=".zip" required>
+
+        <button type="submit">Upload</button>
+        <p id="error"></p>
+        <p id="success"></p>
+    </form>
+
+    <h2>Added Datasets</h2>
+    <table id="datasetsTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Kind</th>
+                <th>Rows</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="datasetsBody"></tbody>
+    </table>
+
+    <h2>Query Dataset</h2>
+    <textarea id="queryInput" rows="10" style="width: 100%; font-family: monospace; font-size: 14px;" placeholder='{"WHERE": {}, "OPTIONS": {"COLUMNS": ["sections_dept", "sections_avg"]}}'></textarea>
+    <br>
+    <button onclick="performQuery()">Run Query</button>
+    <p id="queryError" style="color: red;"></p>
+
+    <h2>Query Results</h2>
+    <div id="queryResults"></div>
+
+    <h2>UBC Buildings Map</h2>
+    <button onclick="loadMap()">Show Buildings on Map</button>
+    <div id="map" style="height: 500px; margin-top: 20px;"></div>
+
+    <script>
+        async function loadDatasets() {
+            try {
+                const response = await fetch("http://localhost:4321/datasets");
+                const data = await response.json();
+                const tbody = document.getElementById("datasetsBody");
+                tbody.innerHTML = "";
+                for (const dataset of data.result) {
+                    const row = document.createElement("tr");
+                    // row.innerHTML = `<td>${dataset.id}</td><td>${dataset.kind}</td><td>${dataset.numRows}</td>`;
+                    row.innerHTML = `
+                        <td>${dataset.id}</td>
+                        <td>${dataset.kind}</td>
+                        <td>${dataset.numRows}</td>
+                        <td><button onclick="deleteDataset('${dataset.id}')">Delete</button></td>
+                    `;
+                    tbody.appendChild(row);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById("datasetId").value.trim();
+            const kind = document.getElementById("datasetKind").value;
+            const file = document.getElementById("datasetFile").files[0];
+            const errorEl = document.getElementById("error");
+            const successEl = document.getElementById("success");
+
+            errorEl.textContent = "";
+            successEl.textContent = "";
+
+            if (!id) {
+                errorEl.textContent = "Dataset ID cannot be empty.";
+                return;
+            }
+
+            if (id.includes("_")) {
+                errorEl.textContent = "Dataset ID cannot contain underscore.";
+                return;
+            }
+
+            if (!file) {
+                errorEl.textContent = "Please select a ZIP file.";
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const base64 = reader.result.split(",")[1];
+                try {
+                    const response = await fetch(`http://localhost:4321/dataset/${id}/${kind}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ content: base64 })
+                    });
+                    const data = await response.json();
+                    if (response.ok) {
+                        successEl.textContent = `Dataset "${id}" added successfully!`;
+                        loadDatasets();
+                    } else {
+                        errorEl.textContent = `Error: ${data.error}`;
+                    }
+                } catch (err) {
+                    errorEl.textContent = "Server error. Please try again.";
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function deleteDataset(id) {
+            try {
+                const response = await fetch(`http://localhost:4321/dataset/${id}`, {
+                    method: "DELETE"
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    loadDatasets();
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            } catch (err) {
+                alert("Server error. Please try again.");
+            }
+        }
+
+        async function performQuery() {
+            const queryInput = document.getElementById("queryInput").value;
+            const queryError = document.getElementById("queryError");
+            const queryResults = document.getElementById("queryResults");
+
+            queryError.textContent = "";
+            queryResults.innerHTML = "";
+
+            let query;
+            try {
+                query = JSON.parse(queryInput);
+            } catch (err) {
+                queryError.textContent = "Invalid JSON format.";
+                return;
+            }
+
+            try {
+                const response = await fetch("http://localhost:4321/query", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(query)
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.result.length === 0) {
+                        queryResults.innerHTML = "<p>No results found.</p>";
+                        return;
+                    }
+
+                    const keys = Object.keys(data.result[0]);
+                    let tableHTML = "<table><thead><tr>";
+                    for (const key of keys) {
+                        tableHTML += `<th>${key}</th>`;
+                    }
+                    tableHTML += "</tr></thead><tbody>";
+
+                    for (const row of data.result) {
+                        tableHTML += "<tr>";
+                        for (const key of keys) {
+                            tableHTML += `<td>${row[key]}</td>`;
+                        }
+                        tableHTML += "</tr>";
+                    }
+                    tableHTML += "</tbody></table>";
+                    queryResults.innerHTML = tableHTML;
+                } else {
+                    queryError.textContent = `Error: ${data.error}`;
+                }
+            } catch (err) {
+                queryError.textContent = "Server error. Please try again.";
+            }
+        }
+
+        let map = null;
+
+        async function loadMap() {
+            if (map === null) {
+                map = L.map("map").setView([49.2606, -123.2460], 15);
+                L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    attribution: "© OpenStreetMap contributors"
+                }).addTo(map);
+            }
+
+            try {
+                const response = await fetch("http://localhost:4321/query", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        "WHERE": {},
+                        "OPTIONS": {
+                            "COLUMNS": ["rooms_shortname", "rooms_fullname", "rooms_lat", "rooms_lon"]
+                        },
+                        "TRANSFORMATIONS": {
+                            "GROUP": ["rooms_shortname", "rooms_fullname", "rooms_lat", "rooms_lon"],
+                            "APPLY": []
+                        }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    for (const building of data.result) {
+                        L.marker([building.rooms_lat, building.rooms_lon])
+                            .addTo(map)
+                            .bindPopup(`<b>${building.rooms_shortname}</b><br>${building.rooms_fullname}`);
+                    }
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+            } catch (err) {
+                alert("Server error. Please try again.");
+            }
+        }
+        
+        loadDatasets();
+    </script>
+</body>
+</html>

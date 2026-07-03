@@ -1,0 +1,19 @@
+{
+    "title": "Invalid APPLY key with underscore",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "invalid_key"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_dept"],
+            "APPLY": [{
+                "invalid_key": {
+                    "AVG": "small_avg"
+                }
+            }]
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

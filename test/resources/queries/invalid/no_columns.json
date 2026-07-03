@@ -1,0 +1,15 @@
+{
+	"title": "Query missing COLUMNS",
+	"input": {
+		"WHERE": {
+			"GT": {
+				"small_avg": 97
+			}
+		},
+		"OPTIONS": {
+			"ORDER": "small_avg"
+		}
+	},
+	"errorExpected": true,
+	"expected": "InsightError"
+}

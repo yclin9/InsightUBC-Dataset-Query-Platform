@@ -1,0 +1,36 @@
+{
+    "title": "GROUP by dept and COUNT unique values",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "countCourse"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_dept"],
+            "APPLY": [{
+                "countCourse": {
+                    "COUNT": "small_id"
+                }
+            }]
+        }
+    },
+    "errorExpected": false,
+    "expected": [
+        {
+            "small_dept": "cpen",
+            "countCourse": 1
+        },
+        {
+            "small_dept": "cpsc",
+            "countCourse": 3
+        },
+        {
+            "small_dept": "math",
+            "countCourse": 1
+        },
+        {
+            "small_dept": "stat",
+            "countCourse": 1
+        }
+    ]
+}

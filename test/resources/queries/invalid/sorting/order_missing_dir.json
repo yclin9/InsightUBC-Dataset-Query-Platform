@@ -1,0 +1,14 @@
+{
+    "title": "ORDER object missing dir",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "small_avg"],
+            "ORDER": {
+                "keys": ["small_avg"]
+            }
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

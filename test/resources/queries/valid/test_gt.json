@@ -1,0 +1,36 @@
+{
+	"title": "SELECT dept, course, avg WHERE avg > 73",
+	"input": {
+		"WHERE": {
+			"GT": {
+				"small_avg": 73
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_id",
+				"small_avg"
+			],
+			"ORDER": "small_avg"
+		}
+	},
+	"errorExpected": false,
+	"expected": [
+		{
+			"small_dept": "cpen",
+			"small_id": "211",
+			"small_avg": 73.81
+        },
+		{
+			"small_dept": "cpsc",
+			"small_id": "310",
+			"small_avg": 78.69
+        },
+		{
+			"small_dept": "cpsc",
+			"small_id": "221",
+			"small_avg": 82.45
+		}
+	]
+}

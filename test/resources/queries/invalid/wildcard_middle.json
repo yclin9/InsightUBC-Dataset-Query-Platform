@@ -1,0 +1,17 @@
+{
+	"title": "Wildcard in the middle",
+	"input": {
+		"WHERE": {
+			"IS": {
+				"small_dept": "c*c"
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept"
+			]
+		}
+	},
+	"errorExpected": true,
+	"expected": "InsightError"
+}

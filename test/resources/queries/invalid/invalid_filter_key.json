@@ -1,0 +1,9 @@
+{
+    "title": "Invalid filter key",
+    "input": {
+        "WHERE": {"INVALID": {"small_avg": 70}},
+        "OPTIONS": {"COLUMNS": ["small_dept", "small_avg"]}
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

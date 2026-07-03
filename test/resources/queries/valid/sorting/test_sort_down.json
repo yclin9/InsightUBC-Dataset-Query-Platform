@@ -1,0 +1,50 @@
+{
+    "title": "Sort results descending by avg",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": [
+                "small_dept",
+                "small_id",
+                "small_avg"
+            ],
+            "ORDER": {
+                "dir": "DOWN",
+                "keys": ["small_avg"]
+            }
+        }
+    },
+    "errorExpected": false,
+    "expected": [
+        {
+            "small_dept": "cpsc",
+			"small_id": "221",
+            "small_avg": 82.45
+        },
+        {
+            "small_dept": "cpsc",
+			"small_id": "310",
+            "small_avg": 78.69
+        },
+        {
+            "small_dept": "cpen",
+			"small_id": "211",
+            "small_avg": 73.81
+        },
+        {
+            "small_dept": "stat",
+			"small_id": "251",
+            "small_avg": 72.42
+        },
+        {
+            "small_dept": "cpsc",
+			"small_id": "110",
+            "small_avg": 71.07
+        },
+        {
+            "small_dept": "math",
+			"small_id": "100",
+            "small_avg": 70.53
+        }
+    ]
+}

@@ -1,0 +1,13 @@
+{
+    "title": "GT value is not a number",
+    "input": {
+        "WHERE": {
+            "GT": {"small_avg": "70"}
+        },
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "small_avg"]
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

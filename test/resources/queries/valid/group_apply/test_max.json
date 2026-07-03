@@ -1,0 +1,36 @@
+{
+    "title": "GROUP by dept and MAX avg result",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "maxGrade"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_dept"],
+            "APPLY": [{
+                "maxGrade": {
+                    "MAX": "small_avg"
+                }
+            }]
+        }
+    },
+    "errorExpected": false,
+    "expected": [
+        {
+            "small_dept": "cpen",
+            "maxGrade": 73.81
+        },
+        {
+            "small_dept": "cpsc",
+            "maxGrade": 82.45
+        },
+        {
+            "small_dept": "math",
+            "maxGrade": 70.53
+        },
+        {
+            "small_dept": "stat",
+            "maxGrade": 72.42
+        }
+    ]
+}

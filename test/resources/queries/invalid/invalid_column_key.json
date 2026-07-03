@@ -1,0 +1,11 @@
+{
+    "title": "COLUMNS key with invalid format",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["_avg"]
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

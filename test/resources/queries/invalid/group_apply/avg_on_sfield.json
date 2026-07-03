@@ -1,0 +1,19 @@
+{
+    "title": "AVG used on string field",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "avgDept"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_dept"],
+            "APPLY": [{
+                "avgDept": {
+                    "AVG": "small_dept"
+                }
+            }]
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

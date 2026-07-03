@@ -1,0 +1,36 @@
+{
+    "title": "GROUP by dept and Sum avg result (rounded to two decimal places)",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "sumGrade"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_dept"],
+            "APPLY": [{
+                "sumGrade": {
+                    "SUM": "small_avg"
+                }
+            }]
+        }
+    },
+    "errorExpected": false,
+    "expected": [
+        {
+            "small_dept": "cpen",
+            "sumGrade": 73.81
+        },
+        {
+            "small_dept": "cpsc",
+            "sumGrade": 232.21
+        },
+        {
+            "small_dept": "math",
+            "sumGrade": 70.53
+        },
+        {
+            "small_dept": "stat",
+            "sumGrade": 72.42
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "title": "TRANSFORMATIONS missing GROUP",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["avgGrade"]
+        },
+        "TRANSFORMATIONS": {
+            "APPLY": [{"avgGrade": {"AVG": "small_avg"}}]
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

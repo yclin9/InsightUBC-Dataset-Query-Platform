@@ -1,0 +1,26 @@
+{
+    "title": "Duplicate APPLY key",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "avgGrade"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_dept"],
+            "APPLY": [
+                {
+                    "avgGrade": {
+                        "AVG": "small_avg"
+                    }
+                },
+                {
+                    "avgGrade": {
+                        "MAX": "small_avg"
+                    }
+                }
+            ]
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

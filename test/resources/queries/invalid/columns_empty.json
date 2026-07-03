@@ -1,0 +1,16 @@
+{
+	"title": "Query with empty COLUMNS",
+	"input": {
+		"WHERE": {
+			"GT": {
+				"small_avg": 97
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [],
+			"ORDER": "small_avg"
+		}
+	},
+	"errorExpected": true,
+	"expected": "InsightError"
+}

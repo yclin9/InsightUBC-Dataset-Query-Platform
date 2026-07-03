@@ -1,0 +1,19 @@
+{
+	"title": "Query referencing non-existent dataset",
+	"input": {
+		"WHERE": {
+			"GT": {
+				"notexist_avg": 97
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"notexist_dept",
+				"notexist_avg"
+			],
+			"ORDER": "notexist_avg"
+		}
+	},
+	"errorExpected": true,
+	"expected": "InsightError"
+}

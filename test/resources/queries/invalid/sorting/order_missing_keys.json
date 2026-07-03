@@ -1,0 +1,14 @@
+{
+    "title": "ORDER object missing keys",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "small_avg"],
+            "ORDER": {
+                "dir": "UP"
+            }
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

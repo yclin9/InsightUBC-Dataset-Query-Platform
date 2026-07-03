@@ -1,0 +1,14 @@
+{
+	"title": "Query missing WHERE",
+	"input": {
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_avg"
+			],
+			"ORDER": "small_avg"
+		}
+	},
+	"errorExpected": true,
+	"expected": "InsightError"
+}

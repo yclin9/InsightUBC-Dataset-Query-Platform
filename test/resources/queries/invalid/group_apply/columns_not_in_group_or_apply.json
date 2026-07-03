@@ -1,0 +1,15 @@
+{
+    "title": "COLUMNS are not included in GROUP or APPLY",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "small_avg"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_dept"],
+            "APPLY": []
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

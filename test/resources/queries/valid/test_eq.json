@@ -1,0 +1,23 @@
+{
+	"title": "SELECT dept, avg WHERE avg = 78.69",
+	"input": {
+		"WHERE": {
+			"EQ": {
+				"small_avg": 78.69
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_avg"
+			]
+		}
+	},
+	"errorExpected": false,
+	"expected": [
+		{
+			"small_dept": "cpsc",
+			"small_avg": 78.69
+        }
+	]
+}

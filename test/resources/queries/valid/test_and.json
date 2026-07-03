@@ -1,0 +1,33 @@
+{
+	"title": "SELECT dept, course, year WHERE avg > 73 AND year = 2014",
+	"input": {
+		"WHERE": {
+			"AND": [
+				{ "GT": { "small_avg": 73 } },
+				{ "EQ": { "small_year": 2014 } }
+			]
+			
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_id",
+				"small_year"
+			],
+			"ORDER": "small_id"
+		}
+	},
+	"errorExpected": false,
+	"expected": [
+		{
+			"small_dept": "cpsc",
+			"small_id": "221",
+			"small_year": 2014
+        },
+		{
+			"small_dept": "cpsc",
+			"small_id": "310",
+			"small_year": 2014
+		}
+	]
+}

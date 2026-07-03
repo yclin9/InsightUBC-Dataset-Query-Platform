@@ -1,0 +1,13 @@
+{
+    "title": "OR with empty array",
+    "input": {
+        "WHERE": {
+            "OR": []
+        },
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "small_avg"]
+        }
+    },
+    "errorExpected": true,
+    "expected": "InsightError"
+}

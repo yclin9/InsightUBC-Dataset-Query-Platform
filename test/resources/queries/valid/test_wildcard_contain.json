@@ -1,0 +1,31 @@
+{
+	"title": "SELECT dept, course, pass WHERE dept = \"*t*\"",
+	"input": {
+		"WHERE": {
+			"IS": {
+				"small_dept": "*t*"
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_id",
+				"small_pass"
+			],
+			"ORDER": "small_pass"
+		}
+	},
+	"errorExpected": false,
+	"expected": [
+		{
+            "small_dept": "math",
+			"small_id": "100",
+			"small_pass": 75
+        },
+		{
+            "small_dept": "stat",
+			"small_id": "251",
+			"small_pass": 204
+        }
+	]
+}

@@ -1,0 +1,36 @@
+{
+    "title": "GROUP by dept and MIN avg result",
+    "input": {
+        "WHERE": {},
+        "OPTIONS": {
+            "COLUMNS": ["small_dept", "minGrade"]
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["small_dept"],
+            "APPLY": [{
+                "minGrade": {
+                    "MIN": "small_avg"
+                }
+            }]
+        }
+    },
+    "errorExpected": false,
+    "expected": [
+        {
+            "small_dept": "cpen",
+            "minGrade": 73.81
+        },
+        {
+            "small_dept": "cpsc",
+            "minGrade": 71.07
+        },
+        {
+            "small_dept": "math",
+            "minGrade": 70.53
+        },
+        {
+            "small_dept": "stat",
+            "minGrade": 72.42
+        }
+    ]
+}

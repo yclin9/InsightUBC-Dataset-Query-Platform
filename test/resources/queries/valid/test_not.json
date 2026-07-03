@@ -1,0 +1,34 @@
+{
+	"title": "SELECT dept, course, avg WHERE dept IS NOT \"cpsc\"",
+	"input": {
+		"WHERE": {
+			"NOT":{
+				"IS": {
+					"small_dept": "cpsc"
+				}
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_id"
+			],
+			"ORDER": "small_dept"
+		}
+	},
+	"errorExpected": false,
+	"expected": [
+		{
+			"small_dept": "cpen",
+			"small_id": "211"
+		},
+		{
+			"small_dept": "math",
+			"small_id": "100"
+		},
+		{
+			"small_dept": "stat",
+			"small_id": "251"
+		}
+	]
+}

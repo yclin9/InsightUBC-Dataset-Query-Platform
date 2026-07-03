@@ -1,0 +1,25 @@
+{
+	"title": "SELECT dept, course, avg WHERE dept = \"*en\"",
+	"input": {
+		"WHERE": {
+			"IS": {
+				"small_dept": "*en"
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_dept",
+				"small_id",
+				"small_title"
+			]
+		}
+	},
+	"errorExpected": false,
+	"expected": [
+		{
+            "small_dept": "cpen",
+			"small_id": "211",
+			"small_title": "intr microcomput"
+        }
+	]
+}

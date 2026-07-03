@@ -1,0 +1,32 @@
+{
+	"title": "SELECT course, avg WHERE dept = \"cpsc\"",
+	"input": {
+		"WHERE": {
+			"IS": {
+				"small_dept": "cpsc"
+			}
+		},
+		"OPTIONS": {
+			"COLUMNS": [
+				"small_id",
+				"small_title"
+			],
+			"ORDER": "small_id"
+		}
+	},
+	"errorExpected": false,
+	"expected": [
+        {
+			"small_id": "110",
+			"small_title": "comptn, progrmng"
+        },
+		{
+			"small_id": "221",
+			"small_title": "basic alg\u0026data"
+        },
+		{
+			"small_id": "310",
+			"small_title": "intr sftwr eng"
+        }
+	]
+}

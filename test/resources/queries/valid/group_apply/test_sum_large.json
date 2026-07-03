@@ -1,0 +1,32 @@
+{
+    "title": "SUM with large dataset",
+    "input": {
+        "WHERE": {
+            "IS": {
+                "sections_dept": "cpsc"
+            }
+        },
+        "OPTIONS": {
+            "COLUMNS": ["sections_dept", "sumAvg"],
+            "ORDER": {
+                "dir": "UP",
+                "keys": ["sections_dept"]
+            }
+        },
+        "TRANSFORMATIONS": {
+            "GROUP": ["sections_dept"],
+            "APPLY": [{
+                "sumAvg": {
+                    "SUM": "sections_avg"
+                }
+            }]
+        }
+    },
+    "errorExpected": false,
+    "expected": [
+        {
+            "sections_dept": "cpsc",
+            "sumAvg": 86189.91
+        }
+    ]
+}
