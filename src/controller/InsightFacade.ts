@@ -12,6 +12,14 @@ import { SectionsProcessor } from "./SectionsProcessor";
 import { DatasetProcessor } from "./DatasetProcessor";
 import fs from "fs-extra";
 import Decimal from "decimal.js";
+import {
+  ApplyToken,
+  MaxToken,
+  MinToken,
+  AvgToken,
+  SumToken,
+  CountToken,
+} from "./ApplyTokens";
 
 interface StoredDataset {
   kind: InsightDatasetKind;
@@ -355,12 +363,20 @@ export default class InsightFacade implements IInsightFacade {
       "seats",
     ];
 
+    const tokenMap: Record<string, ApplyToken> = {
+      MAX: new MaxToken(),
+      MIN: new MinToken(),
+      AVG: new AvgToken(),
+      SUM: new SumToken(),
+      COUNT: new CountToken(),
+    };
+
     // Group sections
     const groups = new Map<string, any[]>();
     for (const section of sections) {
       const key = groupKeys
         .map((k) => section[fieldMap[k.split("_")[1]]])
-        .join("_");
+        .join("||");
       if (!groups.has(key)) {
         groups.set(key, []);
       }
@@ -390,40 +406,7 @@ export default class InsightFacade implements IInsightFacade {
         if (token !== "COUNT" && !mfields.includes(currentField)) {
           throw new InsightError(`${token} can only be used on numeric fields`);
         }
-
-        switch (token) {
-          case "MAX":
-            result[applyKey] = Math.max(...group.map((s) => s[fieldName]));
-            break;
-          case "MIN":
-            result[applyKey] = Math.min(...group.map((s) => s[fieldName]));
-            break;
-          case "AVG": {
-            const total = group.reduce(
-              (sum, s) => sum.add(new Decimal(s[fieldName])),
-              new Decimal(0),
-            );
-            result[applyKey] = Number(
-              (total.toNumber() / group.length).toFixed(2),
-            );
-            break;
-          }
-          case "SUM": {
-            const total = group.reduce(
-              (sum, s) => sum.add(new Decimal(s[fieldName])),
-              new Decimal(0),
-            );
-            result[applyKey] = Number(total.toFixed(2));
-            break;
-          }
-          case "COUNT": {
-            const unique = new Set(group.map((s) => s[fieldName]));
-            result[applyKey] = unique.size;
-            break;
-          }
-          default:
-            throw new InsightError(`Invalid APPLY token: ${token}`);
-        }
+        result[applyKey] = tokenMap[token].apply(group, fieldName);
       }
       results.push(result);
     }

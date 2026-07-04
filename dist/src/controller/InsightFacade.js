@@ -7,7 +7,7 @@ const IInsightFacade_1 = require("./IInsightFacade");
 const RoomsProcessor_1 = require("./RoomsProcessor");
 const SectionsProcessor_1 = require("./SectionsProcessor");
 const fs_extra_1 = __importDefault(require("fs-extra"));
-const decimal_js_1 = __importDefault(require("decimal.js"));
+const ApplyTokens_1 = require("./ApplyTokens");
 class InsightFacade {
     datasets = new Map();
     datasetLoaded = false;
@@ -266,11 +266,18 @@ class InsightFacade {
             "lon",
             "seats",
         ];
+        const tokenMap = {
+            MAX: new ApplyTokens_1.MaxToken(),
+            MIN: new ApplyTokens_1.MinToken(),
+            AVG: new ApplyTokens_1.AvgToken(),
+            SUM: new ApplyTokens_1.SumToken(),
+            COUNT: new ApplyTokens_1.CountToken(),
+        };
         const groups = new Map();
         for (const section of sections) {
             const key = groupKeys
                 .map((k) => section[fieldMap[k.split("_")[1]]])
-                .join("_");
+                .join("||");
             if (!groups.has(key)) {
                 groups.set(key, []);
             }
@@ -293,31 +300,7 @@ class InsightFacade {
                 if (token !== "COUNT" && !mfields.includes(currentField)) {
                     throw new IInsightFacade_1.InsightError(`${token} can only be used on numeric fields`);
                 }
-                switch (token) {
-                    case "MAX":
-                        result[applyKey] = Math.max(...group.map((s) => s[fieldName]));
-                        break;
-                    case "MIN":
-                        result[applyKey] = Math.min(...group.map((s) => s[fieldName]));
-                        break;
-                    case "AVG": {
-                        const total = group.reduce((sum, s) => sum.add(new decimal_js_1.default(s[fieldName])), new decimal_js_1.default(0));
-                        result[applyKey] = Number((total.toNumber() / group.length).toFixed(2));
-                        break;
-                    }
-                    case "SUM": {
-                        const total = group.reduce((sum, s) => sum.add(new decimal_js_1.default(s[fieldName])), new decimal_js_1.default(0));
-                        result[applyKey] = Number(total.toFixed(2));
-                        break;
-                    }
-                    case "COUNT": {
-                        const unique = new Set(group.map((s) => s[fieldName]));
-                        result[applyKey] = unique.size;
-                        break;
-                    }
-                    default:
-                        throw new IInsightFacade_1.InsightError(`Invalid APPLY token: ${token}`);
-                }
+                result[applyKey] = tokenMap[token].apply(group, fieldName);
             }
             results.push(result);
         }
