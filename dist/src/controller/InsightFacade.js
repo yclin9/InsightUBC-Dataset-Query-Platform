@@ -8,6 +8,7 @@ const RoomsProcessor_1 = require("./RoomsProcessor");
 const SectionsProcessor_1 = require("./SectionsProcessor");
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const ApplyTokens_1 = require("./ApplyTokens");
+const FilterParser_1 = require("./FilterParser");
 class InsightFacade {
     datasets = new Map();
     datasetLoaded = false;
@@ -208,8 +209,10 @@ class InsightFacade {
         }
         const sections = await this.getDatasetRows(datasetId);
         const where = queryObj["WHERE"];
-        const filteredSections = sections.filter((section) => this.applyFilter(section, where));
         const fieldMap = this.getFieldMap();
+        const filterParser = new FilterParser_1.FilterParser(fieldMap);
+        const filter = filterParser.parse(where);
+        const filteredSections = sections.filter((section) => filter.matches(section));
         let processedResults;
         if (transformations !== undefined) {
             processedResults = this.applyTransformations(filteredSections, groupKeys, applyRules, columns);
@@ -343,120 +346,6 @@ class InsightFacade {
             return data.rows;
         }
         return [];
-    }
-    applyFilter(section, filter) {
-        const fieldMap = this.getFieldMap();
-        const filterKey = Object.keys(filter)[0];
-        if (filterKey === undefined) {
-            return true;
-        }
-        if (filterKey === "AND") {
-            const andFilters = filter[filterKey];
-            if (!Array.isArray(andFilters) || andFilters.length === 0) {
-                throw new IInsightFacade_1.InsightError("AND must have at least one filter");
-            }
-            return andFilters.every((f) => this.applyFilter(section, f));
-        }
-        if (filterKey === "OR") {
-            const orFilters = filter[filterKey];
-            if (!Array.isArray(orFilters) || orFilters.length === 0) {
-                throw new IInsightFacade_1.InsightError("OR must have at least one filter");
-            }
-            return orFilters.some((f) => this.applyFilter(section, f));
-        }
-        if (filterKey === "NOT") {
-            const notFilter = filter[filterKey];
-            return !this.applyFilter(section, notFilter);
-        }
-        const filterValue = filter[filterKey];
-        const field = Object.keys(filterValue)[0];
-        if (field === undefined) {
-            throw new IInsightFacade_1.InsightError("Filter must have a key");
-        }
-        const value = filterValue[field];
-        const sectionField = fieldMap[field.split("_")[1]];
-        const mfields = [
-            "avg",
-            "pass",
-            "fail",
-            "audit",
-            "year",
-            "lat",
-            "lon",
-            "seats",
-        ];
-        const sfields = [
-            "dept",
-            "id",
-            "instructor",
-            "title",
-            "uuid",
-            "fullname",
-            "shortname",
-            "number",
-            "name",
-            "address",
-            "type",
-            "furniture",
-            "href",
-        ];
-        const currentField = field.split("_")[1];
-        switch (filterKey) {
-            case "GT":
-            case "LT":
-            case "EQ": {
-                if (!mfields.includes(currentField)) {
-                    throw new IInsightFacade_1.InsightError("GT/LT/EQ can only be used on number fields");
-                }
-                if (typeof value !== "number") {
-                    throw new IInsightFacade_1.InsightError("GT/LT/EQ value must be a number");
-                }
-                if (filterKey === "GT")
-                    return section[sectionField] > value;
-                if (filterKey === "LT")
-                    return section[sectionField] < value;
-                return section[sectionField] === value;
-            }
-            case "IS": {
-                if (!sfields.includes(currentField)) {
-                    throw new IInsightFacade_1.InsightError("IS can only be used on string fields");
-                }
-                if (typeof value !== "string") {
-                    throw new IInsightFacade_1.InsightError("IS value must be a number");
-                }
-                const innerValue = value.slice(1, -1);
-                if (innerValue.includes("*")) {
-                    throw new IInsightFacade_1.InsightError("Wildcard cannot be in the middle");
-                }
-                return this.applyIS(section[sectionField], value);
-            }
-            case "AND": {
-                const andFilters = filter[filterKey];
-                return andFilters.every((f) => this.applyFilter(section, f));
-            }
-            case "OR": {
-                const orFilters = filter[filterKey];
-                return orFilters.some((f) => this.applyFilter(section, f));
-            }
-            case "NOT":
-                return !this.applyFilter(section, filterValue);
-            default:
-                throw new IInsightFacade_1.InsightError("Invalid filter key");
-        }
-    }
-    applyIS(sectionValue, pattern) {
-        if (pattern.startsWith("*") && pattern.endsWith("*")) {
-            return sectionValue.includes(pattern.slice(1, -1));
-        }
-        else if (pattern.startsWith("*")) {
-            return sectionValue.endsWith(pattern.slice(1));
-        }
-        else if (pattern.endsWith("*")) {
-            return sectionValue.startsWith(pattern.slice(0, -1));
-        }
-        else {
-            return sectionValue === pattern;
-        }
     }
     async listDatasets() {
         await this.ensureDatasetLoaded();

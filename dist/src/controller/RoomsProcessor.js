@@ -167,18 +167,25 @@ class RoomsProcessor {
         return href.replace(/^\.\//, "").replace(/^\/+/, "");
     }
     async getGeolocation(address) {
-        const encodedAddress = encodeURIComponent(address);
-        const url = `http://cs310.students.cs.ubc.ca:11316/api/v1/project_team078/${encodedAddress}`;
+        const encodedAddress = encodeURIComponent(address + ", Vancouver, BC, Canada");
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`;
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                headers: {
+                    "User-Agent": "InsightUBC/1.0",
+                },
+            });
             if (!response.ok) {
                 return null;
             }
-            const geo = (await response.json());
-            if (typeof geo.lat !== "number" || typeof geo.lon !== "number") {
+            const results = (await response.json());
+            if (results.length === 0) {
                 return null;
             }
-            return { lat: geo.lat, lon: geo.lon };
+            return {
+                lat: parseFloat(results[0].lat),
+                lon: parseFloat(results[0].lon),
+            };
         }
         catch {
             return null;

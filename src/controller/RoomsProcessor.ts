@@ -227,25 +227,68 @@ export class RoomsProcessor implements DatasetProcessor {
     return href.replace(/^\.\//, "").replace(/^\/+/, "");
   }
 
+  /**
+   * This method requires access to the UBC network or VPN to function correctly.
+   * Use this method when running the application on the UBC network.
+   */
+  // private async getGeolocation(
+  //   address: string,
+  // ): Promise<{ lat: number; lon: number } | null> {
+  //   const encodedAddress = encodeURIComponent(address);
+  //   const url = `http://cs310.students.cs.ubc.ca:11316/api/v1/project_team078/${encodedAddress}`;
+
+  //   try {
+  //     const response = await fetch(url);
+  //     if (!response.ok) {
+  //       return null;
+  //     }
+
+  //     const geo = (await response.json()) as GeoResponse;
+
+  //     if (typeof geo.lat !== "number" || typeof geo.lon !== "number") {
+  //       return null;
+  //     }
+
+  //     return { lat: geo.lat, lon: geo.lon };
+  //   } catch {
+  //     return null;
+  //   }
+  // }
+
+  /**
+   * This method is publicly accessible and does not require UBC network access.
+   * Use this method when running the application outside of the UBC network.
+   * However, Nominatim has a rate limit of 1 request per second, so processing
+   * large datasets may take longer.
+   */
   private async getGeolocation(
     address: string,
   ): Promise<{ lat: number; lon: number } | null> {
-    const encodedAddress = encodeURIComponent(address);
-    const url = `http://cs310.students.cs.ubc.ca:11316/api/v1/project_team078/${encodedAddress}`;
+    const encodedAddress = encodeURIComponent(
+      address + ", Vancouver, BC, Canada",
+    );
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`;
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "InsightUBC/1.0",
+        },
+      });
       if (!response.ok) {
         return null;
       }
 
-      const geo = (await response.json()) as GeoResponse;
+      const results = (await response.json()) as any[];
 
-      if (typeof geo.lat !== "number" || typeof geo.lon !== "number") {
+      if (results.length === 0) {
         return null;
       }
 
-      return { lat: geo.lat, lon: geo.lon };
+      return {
+        lat: parseFloat(results[0].lat),
+        lon: parseFloat(results[0].lon),
+      };
     } catch {
       return null;
     }

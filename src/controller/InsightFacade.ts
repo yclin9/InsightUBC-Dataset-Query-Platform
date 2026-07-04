@@ -11,7 +11,6 @@ import { RoomsProcessor } from "./RoomsProcessor";
 import { SectionsProcessor } from "./SectionsProcessor";
 import { DatasetProcessor } from "./DatasetProcessor";
 import fs from "fs-extra";
-import Decimal from "decimal.js";
 import {
   ApplyToken,
   MaxToken,
@@ -20,6 +19,7 @@ import {
   SumToken,
   CountToken,
 } from "./ApplyTokens";
+import { FilterParser } from "./FilterParser";
 
 interface StoredDataset {
   kind: InsightDatasetKind;
@@ -292,11 +292,13 @@ export default class InsightFacade implements IInsightFacade {
     const sections = await this.getDatasetRows(datasetId);
 
     const where = queryObj["WHERE"] as Record<string, unknown>;
-    const filteredSections = sections.filter((section: any) =>
-      this.applyFilter(section, where),
-    );
 
     const fieldMap = this.getFieldMap();
+    const filterParser = new FilterParser(fieldMap);
+    const filter = filterParser.parse(where);
+    const filteredSections = sections.filter((section: any) =>
+      filter.matches(section),
+    );
 
     let processedResults: Record<string, string | number>[];
 
@@ -457,127 +459,6 @@ export default class InsightFacade implements IInsightFacade {
     }
 
     return [];
-  }
-
-  private applyFilter(section: any, filter: Record<string, unknown>): boolean {
-    const fieldMap = this.getFieldMap();
-
-    const filterKey = Object.keys(filter)[0];
-
-    if (filterKey === undefined) {
-      return true;
-    }
-
-    if (filterKey === "AND") {
-      const andFilters = filter[filterKey] as Record<string, unknown>[];
-      if (!Array.isArray(andFilters) || andFilters.length === 0) {
-        throw new InsightError("AND must have at least one filter");
-      }
-      return andFilters.every((f) => this.applyFilter(section, f));
-    }
-
-    if (filterKey === "OR") {
-      const orFilters = filter[filterKey] as Record<string, unknown>[];
-      if (!Array.isArray(orFilters) || orFilters.length === 0) {
-        throw new InsightError("OR must have at least one filter");
-      }
-      return orFilters.some((f) => this.applyFilter(section, f));
-    }
-
-    if (filterKey === "NOT") {
-      const notFilter = filter[filterKey] as Record<string, unknown>;
-      return !this.applyFilter(section, notFilter);
-    }
-
-    const filterValue = filter[filterKey] as Record<string, unknown>;
-    const field = Object.keys(filterValue)[0];
-    if (field === undefined) {
-      throw new InsightError("Filter must have a key");
-    }
-    const value = filterValue[field];
-    const sectionField = fieldMap[field.split("_")[1]];
-
-    const mfields = [
-      "avg",
-      "pass",
-      "fail",
-      "audit",
-      "year",
-      "lat",
-      "lon",
-      "seats",
-    ];
-    const sfields = [
-      "dept",
-      "id",
-      "instructor",
-      "title",
-      "uuid",
-      "fullname",
-      "shortname",
-      "number",
-      "name",
-      "address",
-      "type",
-      "furniture",
-      "href",
-    ];
-    const currentField = field.split("_")[1];
-
-    switch (filterKey) {
-      case "GT":
-      case "LT":
-      case "EQ": {
-        if (!mfields.includes(currentField)) {
-          throw new InsightError("GT/LT/EQ can only be used on number fields");
-        }
-        if (typeof value !== "number") {
-          throw new InsightError("GT/LT/EQ value must be a number");
-        }
-        if (filterKey === "GT")
-          return section[sectionField] > (value as number);
-        if (filterKey === "LT")
-          return section[sectionField] < (value as number);
-        return section[sectionField] === (value as number);
-      }
-      case "IS": {
-        if (!sfields.includes(currentField)) {
-          throw new InsightError("IS can only be used on string fields");
-        }
-        if (typeof value !== "string") {
-          throw new InsightError("IS value must be a number");
-        }
-        const innerValue = (value as string).slice(1, -1);
-        if (innerValue.includes("*")) {
-          throw new InsightError("Wildcard cannot be in the middle");
-        }
-        return this.applyIS(section[sectionField], value as string);
-      }
-      case "AND": {
-        const andFilters = filter[filterKey] as Record<string, unknown>[];
-        return andFilters.every((f) => this.applyFilter(section, f));
-      }
-      case "OR": {
-        const orFilters = filter[filterKey] as Record<string, unknown>[];
-        return orFilters.some((f) => this.applyFilter(section, f));
-      }
-      case "NOT":
-        return !this.applyFilter(section, filterValue);
-      default:
-        throw new InsightError("Invalid filter key");
-    }
-  }
-
-  private applyIS(sectionValue: string, pattern: string): boolean {
-    if (pattern.startsWith("*") && pattern.endsWith("*")) {
-      return sectionValue.includes(pattern.slice(1, -1));
-    } else if (pattern.startsWith("*")) {
-      return sectionValue.endsWith(pattern.slice(1));
-    } else if (pattern.endsWith("*")) {
-      return sectionValue.startsWith(pattern.slice(0, -1));
-    } else {
-      return sectionValue === pattern;
-    }
   }
 
   public async listDatasets(): Promise<InsightDataset[]> {
