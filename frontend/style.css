@@ -1,0 +1,60 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+}
+
+h1 {
+    color: #002145;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 400px;
+}
+
+input, select {
+    padding: 8px;
+    font-size: 14px;
+}
+
+button {
+    padding: 10px;
+    background: #002145;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+button:hover {
+    background: #0055b3;
+}
+
+#error {
+    color: red;
+}
+
+#success {
+    color: green;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background: #002145;
+    color: white;
+}
